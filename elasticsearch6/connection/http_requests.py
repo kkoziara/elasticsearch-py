@@ -1,5 +1,8 @@
 import time
 import warnings
+from base64 import decodestring
+import gzip
+import io
 
 try:
     import requests
@@ -35,6 +38,7 @@ class RequestsHttpConnection(Connection):
     :arg headers: any custom http headers to be add to requests
     :arg cloud_id: The Cloud ID from ElasticCloud. Convient way to connect to cloud instances.
         Other host connection params will be ignored.
+    :arg http_compress: Use gzip compression
     """
 
     def __init__(
@@ -49,6 +53,7 @@ class RequestsHttpConnection(Connection):
         client_key=None,
         headers=None,
         cloud_id=None,
+        http_compress=False,
         **kwargs
     ):
         if not REQUESTS_AVAILABLE:
@@ -76,6 +81,9 @@ class RequestsHttpConnection(Connection):
             elif isinstance(http_auth, string_types):
                 http_auth = tuple(http_auth.split(":", 1))
             self.session.auth = http_auth
+        self.http_compress = http_compress
+        if self.http_compress == True:
+            self.session.headers.setdefault("content-encoding", "gzip")
         self.base_url = "http%s://%s:%d%s" % (
             "s" if self.use_ssl else "",
             host,
@@ -109,6 +117,15 @@ class RequestsHttpConnection(Connection):
             url = "%s?%s" % (url, urlencode(params or {}))
 
         start = time.time()
+        if self.http_compress and body:
+            try:
+                body = gzip.compress(body)
+            except AttributeError:
+                # for Python 2.x compatibility
+                buf = io.BytesIO()
+                with gzip.GzipFile(fileobj=buf, mode='wb') as f:
+                    f.write(body)
+                body = buf.getvalue()
         request = requests.Request(method=method, headers=headers, url=url, data=body)
         prepared_request = self.session.prepare_request(request)
         settings = self.session.merge_environment_settings(

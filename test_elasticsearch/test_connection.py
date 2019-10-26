@@ -142,6 +142,11 @@ class TestRequestsConnection(TestCase):
         con = RequestsHttpConnection(timeout=42)
         self.assertEquals(42, con.timeout)
 
+    def test_http_compression(self):
+        con = RequestsHttpConnection(http_compress=True)
+        self.assertTrue(con.http_compress)
+        self.assertEquals(con.session.headers["content-encoding"], "gzip")
+
     def test_uses_https_if_verify_certs_is_off(self):
         with warnings.catch_warnings(record=True) as w:
             con = self._get_mock_connection(

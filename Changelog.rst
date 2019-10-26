@@ -5,7 +5,8 @@ Changelog
 
 6.5.0 (dev)
 -----------
-
+  * Added request compression handling to RequestsHttpConnection
+  
 6.4.2 (2019-05-28)
 -----------
   * Bug fix for ML client that use _bulk_body
